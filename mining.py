@@ -26,18 +26,6 @@ class User:
 
 		self.video_cards = []
 
-	def spend(self, money, cur):
-		if not(cur in cur_info):
-			raise exceptions.CurrencyError('no such currency')
-
-		self.wallet[cur] -= money
-
-	def get(self, money, cur):
-		if not(cur in cur_info):
-			raise exceptions.CurrencyError('no such currency')
-
-		self.wallet[cur] += money
-
 	def buy_video_card(self, model, cur):
 		if not(model in video_card_info):
 			raise exceptions.VideoCardError("no video card named '{}'".format(model))
@@ -48,7 +36,7 @@ class User:
 					convert(video_card_info[model]['cost'], 'usd', cur), self.wallet[cur],
 					cur_info[cur]['symbol']))
 
-		self.spend(convert(video_card_info[model]['cost'], 'usd', cur), cur)
+		self.wallet[cur] -= convert(video_card_info[model]['cost'], 'usd', cur)
 		self.video_cards.append(model)
 
 	def sell_video_card(self, model, cur):
@@ -56,14 +44,14 @@ class User:
 			raise exceptions.VideoCardError(
 				"user {} hasn't video card named '{}'".format(self.name, model))
 
-		self.get(convert(video_card_info[model]['cost'], 'usd', cur), cur)
+		self.wallet[cur] += convert(video_card_info[model]['cost'], 'usd', cur)
 		self.video_cards.remove(model)
 
 	def exchange(self, money, cur1, cur2):
 		ret = convert(money, cur1, cur2)
 
-		self.spend(money, cur1)
-		self.get(ret, cur2)
+		self.wallet[cur1] -= money
+		self.wallet[cur2] += ret
 
 	def info(self):
 		print('User:\t{} {} {}'.format(self.login, self.first_name, self.last_name))
