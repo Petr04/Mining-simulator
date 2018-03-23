@@ -6,3 +6,6 @@ class TooExpensiveError(CurrencyError):
 
 class VideoCardError(Exception):
 	pass
+
+class MiningError(Exception):
+	pass

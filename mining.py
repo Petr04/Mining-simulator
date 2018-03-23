@@ -1,4 +1,7 @@
 import exceptions
+import time
+
+# Dollar is taken as unit
 
 cur_info = {'usd': {'cost': 1, 'symbol': '$', 'crypto': False}, 'eur': {'cost': 1.3,
 	'symbol': ' EUR', 'crypto': False}, 'rub': {'cost': 0.016, 'symbol': ' RUB', 'crypto': False},
@@ -24,9 +27,13 @@ class User:
 
 		self.wallet = wallet
 
+		self.mining = None
+
 		self.video_cards = []
 
 	def buy_video_card(self, model, cur):
+		self.update_money()
+
 		if not(model in video_card_info):
 			raise exceptions.VideoCardError("no video card named '{}'".format(model))
 
@@ -40,6 +47,8 @@ class User:
 		self.video_cards.append(model)
 
 	def sell_video_card(self, model, cur):
+		self.update_money()
+
 		if not(model in self.video_cards):
 			raise exceptions.VideoCardError(
 				"user {} hasn't video card named '{}'".format(self.name, model))
@@ -48,17 +57,53 @@ class User:
 		self.video_cards.remove(model)
 
 	def exchange(self, money, cur1, cur2):
+		self.update_money()
+
 		ret = convert(money, cur1, cur2)
 
 		self.wallet[cur1] -= money
 		self.wallet[cur2] += ret
+
+	def start_mining(self):
+		if self.mining != None:
+			raise exceptions.MiningError('mining has already begun at {}'.format(
+				time.asctime(time.localtime(self.mining['start']))))
+
+		mining = {} # Here will be info about mining
+		mining['power'] = {}
+		for cur in cur_info:
+			if cur_info[cur]['crypto'] == False:
+				continue
+
+			mining['power'][cur] = 0
+
+			for vc in video_card_info:
+				mining['power'][cur] += video_card_info[vc]['power'][cur]
+
+		mining['start'] = int(time.time())
+
+		self.mining = mining
+
+	def stop_mining(self):
+		self.update_money()
+		self.mining = None
+
+	def update_money(self):
+		if self.mining == None:
+			return
+
+		for cur in self.mining['power']:
+			self.wallet[cur] += self.mining['power'][cur] * (int(time.time()) - self.mining['start'])
+
+		self.mining['start'] = int(time.time())
 
 	def info(self):
 		print('User:\t{} {} {}'.format(self.login, self.first_name, self.last_name))
 
 		print()
 
-		print('wallet:')
+		self.update_money()
+		print('Wallet:')
 		for i in self.wallet:
 			print('\t{}{} crypto={}'.format(self.wallet[i], cur_info[i]['symbol'],
 				cur_info[i]['crypto']))
@@ -77,15 +122,12 @@ if __name__ == '__main__':
 	me = User(login = 'Petr04', passwd = 'qwerty', first_name = 'Petr', last_name = 'Makarov',
 		wallet = wallet)
 
-	print('Before buying video card:')
+	print('Before mining 3s:')
 	me.info()
 
-	me.buy_video_card('vc1', 'usd')
+	me.start_mining()
+	time.sleep(3)
+	me.stop_mining()
 
-	print('After buying video card:')
-	me.info()
-
-	me.sell_video_card('vc1', 'usd')
-
-	print('After selling video card:')
+	print('After mining 3s:')
 	me.info()
