@@ -4,7 +4,7 @@ import time
 # Dollar is taken as unit
 
 cur_info = {'usd': {'cost': 1, 'symbol': '$', 'crypto': False}, 'eur': {'cost': 1.3,
-	'symbol': ' EUR', 'crypto': False}, 'rub': {'cost': 0.016, 'symbol': ' RUB', 'crypto': False},
+	'symbol': ' EUR', 'crypto': False}, 'rub': {'cost': 0.016, 'symbol': '\u20bd', 'crypto': False},
 	'btc': {'cost': 10000, 'symbol': '\u20bf', 'crypto': True}, 'eth': {'cost': 2000,
 	'symbol': ' ETH', 'crypto': True}}
 
@@ -34,9 +34,6 @@ class User:
 	def buy_video_card(self, model, cur):
 		self.update_money()
 
-		if not(model in video_card_info):
-			raise exceptions.VideoCardError("no video card named '{}'".format(model))
-
 		if self.wallet[cur] < convert(video_card_info[model]['cost'], 'usd', cur):
 			raise exceptions.TooExpensiveError(
 				"video card '{0}' costs {1}{3}, but you have only {2}{3}".format(model,
@@ -48,10 +45,6 @@ class User:
 
 	def sell_video_card(self, model, cur):
 		self.update_money()
-
-		if not(model in self.video_cards):
-			raise exceptions.VideoCardError(
-				"user {} hasn't video card named '{}'".format(self.name, model))
 
 		self.wallet[cur] += convert(video_card_info[model]['cost'], 'usd', cur)
 		self.video_cards.remove(model)
@@ -77,7 +70,7 @@ class User:
 
 			mining['power'][cur] = 0
 
-			for vc in video_card_info:
+			for vc in self.video_cards:
 				mining['power'][cur] += video_card_info[vc]['power'][cur]
 
 		mining['start'] = int(time.time())
@@ -121,6 +114,8 @@ if __name__ == '__main__':
 
 	me = User(login = 'Petr04', passwd = 'qwerty', first_name = 'Petr', last_name = 'Makarov',
 		wallet = wallet)
+
+	me.buy_video_card('vc1', 'usd')
 
 	print('Before mining 3s:')
 	me.info()
