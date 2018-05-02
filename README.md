@@ -6,3 +6,5 @@ sell video card and exchange currency. Exchange rates are real.
 ```$ python main.py```  
 or  
 ```$ ./main.py```  
+Before running main.py, create file `apikey.py` with code:  
+```key = '<your API key>'```
