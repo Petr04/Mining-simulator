@@ -3,22 +3,17 @@
 
 import exceptions
 import time
+from convert import *
+import requests
+from apikey import key
 
-# Dollar is taken as unit
+# EUR is taken as unit
 
-cur_info = {'usd': {'cost': 1, 'symbol': '$', 'crypto': False}, 'eur': {'cost': 1.3,
-	'symbol': ' EUR', 'crypto': False}, 'rub': {'cost': 0.016, 'symbol': '\u20bd', 'crypto': False},
-	'btc': {'cost': 10000, 'symbol': '\u20bf', 'crypto': True}, 'eth': {'cost': 2000,
-	'symbol': ' ETH', 'crypto': True}}
+rates = requests.get('http://data.fixer.io/api/latest?access_key={}'.format(key)).json()
+crypto = ['BTC']
 
-video_card_info = {'vc1': {'power': {'btc': 0.000000001, 'eth': 0.000021}, 'cost': 200},
-'vc2': {'power': {'btc': 0.000000017, 'eth': 0.000057}, 'cost': 317}}
-
-def convert(money, cur1, cur2):
-	if not(cur1 in cur_info and cur2 in cur_info):
-		raise exceptions.CurrencyError('no such currency')
-
-	return money * (1 / cur_info[cur2]['cost']) * cur_info[cur1]['cost']
+video_card_info = {'vc1': {'power': {'BTC': 0.000000001}, 'cost': 200},
+'vc2': {'power': {'BTC': 0.000000017}, 'cost': 317}}
 
 class User:
 	def __init__(self, login, passwd, first_name, last_name, wallet):
@@ -37,28 +32,28 @@ class User:
 	def buy_video_card(self, model, cur):
 		self.update_money()
 
-		if self.wallet[cur] < convert(video_card_info[model]['cost'], 'usd', cur):
+		if self.wallet[cur] < convert(video_card_info[model]['cost'], 'EUR', cur, rates):
 			raise exceptions.TooExpensiveError(
 				"video card '{0}' costs {1}{3}, but you have only {2}{3}".format(model,
-					convert(video_card_info[model]['cost'], 'usd', cur), self.wallet[cur],
-					cur_info[cur]['symbol']))
+					convert(video_card_info[model]['cost'], 'EUR', cur, rates), self.wallet[cur],
+					cur))
 
-		self.wallet[cur] -= convert(video_card_info[model]['cost'], 'usd', cur)
+		self.wallet[cur] -= convert(video_card_info[model]['cost'], 'EUR', cur, rates)
 		self.video_cards.append(model)
 
 	def sell_video_card(self, model, cur):
 		self.update_money()
 
-		self.wallet[cur] += convert(video_card_info[model]['cost'], 'usd', cur)
+		self.wallet[cur] += convert(video_card_info[model]['cost'], 'EUR', cur, rates)
 		self.video_cards.remove(model)
 
-	def exchange(self, money, cur1, cur2):
+	def exchange(self, money, cur_1, cur_2):
 		self.update_money()
 
-		ret = convert(money, cur1, cur2)
+		ret = convert(money, cur_1, cur_2, rates)
 
-		self.wallet[cur1] -= money
-		self.wallet[cur2] += ret
+		self.wallet[cur_1] -= money
+		self.wallet[cur_2] += ret
 
 	def start_mining(self):
 		if self.mining != None:
@@ -67,8 +62,8 @@ class User:
 
 		mining = {} # Here will be info about mining
 		mining['power'] = {}
-		for cur in cur_info:
-			if cur_info[cur]['crypto'] == False:
+		for cur in rates['rates']:
+			if not (cur in crypto):
 				continue
 
 			mining['power'][cur] = 0
@@ -100,9 +95,8 @@ class User:
 
 		self.update_money()
 		print('Wallet:')
-		for i in self.wallet:
-			print('\t{}{} crypto={}'.format(self.wallet[i], cur_info[i]['symbol'],
-				cur_info[i]['crypto']))
+		for cur in self.wallet:
+			print('\t{} {} crypto: {}'.format(self.wallet[cur], cur, cur in crypto))
 
 		print()
 
@@ -110,15 +104,15 @@ class User:
 
 if __name__ == '__main__':
 	wallet = {}
-	wallet = dict.fromkeys(list(cur_info.keys()), 0)
-	# Making dict with currency names from cur_info. Here will be info about user's money.
+	wallet = dict.fromkeys(list(rates['rates'].keys()), 0)
+	# Making dict with currency names. Here will be info about user's money.
 
-	wallet['usd'] = 300
+	wallet['EUR'] = 300
 
 	me = User(login = 'Petr04', passwd = 'qwerty', first_name = 'Petr', last_name = 'Makarov',
 		wallet = wallet)
 
-	me.buy_video_card('vc1', 'usd')
+	me.buy_video_card('vc1', 'EUR')
 
 	print('Before mining 3s:')
 	me.info()
